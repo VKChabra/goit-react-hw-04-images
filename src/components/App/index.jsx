@@ -26,15 +26,14 @@ export const App = () => {
       try {
         setLoading(true);
         const { hits, totalHits } = await fetchImages(searchquery, page);
-
         if (hits.length === 0) {
           setLoading(false);
           setError('Nothing was found for your query, try something else');
           setStatus('rejected');
         } else {
+          setLoading(false);
           setImages(prevImages => [...prevImages, ...hits]);
           setTotalHits(totalHits);
-          setLoading(false);
           setStatus('resolved');
         }
       } catch (error) {
@@ -72,11 +71,13 @@ export const App = () => {
       {status === 'idle' && (
         <h2 className={styles.Idle}>Please enter search query</h2>
       )}
-      {status === 'rejected' && <h1 className={styles.Error}>{error}</h1>}
+      {status === 'rejected' && !loading && (
+        <h1 className={styles.Error}>{error}</h1>
+      )}
       {status === 'resolved' && (
         <div className={styles.Resolved}>
           <ImageGallery images={images} onImageClick={openModal} />
-          {!loading && status === 'resolved' && images.length < totalHits && (
+          {!loading && images.length < totalHits && (
             <LoadMoreBtn loadMoreClick={loadMore} />
           )}
           {url && <Modal url={url} alt={alt} onClose={closeModal} />}
