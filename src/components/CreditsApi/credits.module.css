@@ -1,0 +1,14 @@
+.creditsBlock {
+  position: absolute;
+  left: 10px;
+  top: 18px;
+  display: flex;
+  align-items: center;
+  z-index: 1201;
+}
+
+@media screen and (max-width: 800px) {
+  .creditsBlock {
+    z-index: 1;
+  }
+}
