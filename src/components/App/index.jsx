@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import fetchImages from 'services/Api.js';
 import Searchbar from 'components/Searchbar';
 import Loader from 'components/Loader';
@@ -7,91 +7,82 @@ import LoadMoreBtn from 'components/Button';
 import Modal from 'components/Modal';
 import styles from './app.module.css';
 
-export class App extends Component {
-  state = {
-    images: [],
-    searchQuery: '',
-    page: 1,
-    error: null,
-    status: 'idle',
-    loading: false,
-    url: null,
-    alt: null,
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [searchquery, setSearchquery] = useState('');
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('idle');
+  const [loading, setLoading] = useState(false);
+  const [url, setUrl] = useState(null);
+  const [alt, setAlt] = useState(null);
+  const [totalHits, setTotalHits] = useState(0);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page } = this.state;
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      this.fetchSearchQuery();
+  useEffect(() => {
+    if (searchquery === '') {
       return;
     }
-  }
+    const fetchSearchQuery = async () => {
+      try {
+        setLoading(true);
+        const { hits, totalHits } = await fetchImages(searchquery, page);
 
-  fetchSearchQuery = async () => {
-    const { searchQuery, page } = this.state;
-
-    try {
-      this.setState({ loading: true });
-      const { hits, totalHits } = await fetchImages(searchQuery, page);
-
-      if (hits.length === 0) {
-        this.setState({
-          status: 'rejected',
-          loading: false,
-          error: 'Nothing was found for your query, try something else',
-        });
-      } else {
-        this.setState(({ images }) => ({
-          images: [...images, ...hits],
-          status: 'resolved',
-          loading: false,
-          totalHits,
-        }));
+        if (hits.length === 0) {
+          setLoading(false);
+          setError('Nothing was found for your query, try something else');
+          setStatus('rejected');
+        } else {
+          setImages(prevImages => [...prevImages, ...hits]);
+          setTotalHits(totalHits);
+          setLoading(false);
+          setStatus('resolved');
+        }
+      } catch (error) {
+        setLoading(false);
+        setError(await fetchImages(searchquery, page));
+        setStatus('rejected');
       }
-    } catch (error) {
-      this.setState({
-        status: 'rejected',
-        loading: false,
-        error: await fetchImages(searchQuery, page),
-      });
-    }
+    };
+    fetchSearchQuery();
+  }, [page, searchquery]);
+
+  const handleFormSubmit = searchQuery => {
+    setSearchquery(searchQuery);
+    setPage(1);
+    setImages([]);
   };
 
-  handleFormSubmit = searchQuery => {
-    this.setState({ searchQuery, page: 1, images: [] });
+  const loadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  loadMore = () => {
-    this.setState(({ page }) => ({
-      page: page + 1,
-    }));
+  const openModal = (url, alt) => {
+    setUrl(url);
+    setAlt(alt);
   };
 
-  openModal = (url, alt) => this.setState({ url, alt });
+  const closeModal = () => {
+    setUrl(null);
+    setAlt(null);
+  };
 
-  closeModal = () => this.setState({ url: null, alt: null });
-
-  render() {
-    const { handleFormSubmit, loadMore, openModal, closeModal } = this;
-    const { status, error, loading, images, totalHits, url, alt } = this.state;
-    return (
-      <div className={styles.App}>
-        <Searchbar onSubmit={handleFormSubmit} />
-        {status === 'idle' && (
-          <h2 className={styles.Idle}>Please enter search query</h2>
-        )}
-        {status === 'rejected' && <h1 className={styles.Error}>{error}</h1>}
-        {status === 'resolved' && (
-          <div className={styles.Resolved}>
-            <ImageGallery images={images} onImageClick={openModal} />
-            {!loading && status === 'resolved' && images.length < totalHits && (
-              <LoadMoreBtn loadMoreClick={loadMore} />
-            )}
-            {url && <Modal url={url} alt={alt} onClose={closeModal} />}
-          </div>
-        )}
-        {loading && <Loader />}
-      </div>
-    );
-  }
-}
+  return (
+    <div className={styles.App}>
+      <Searchbar onSubmit={handleFormSubmit} />
+      {status === 'idle' && (
+        <h2 className={styles.Idle}>Please enter search query</h2>
+      )}
+      {status === 'rejected' && <h1 className={styles.Error}>{error}</h1>}
+      {status === 'resolved' && (
+        <div className={styles.Resolved}>
+          <ImageGallery images={images} onImageClick={openModal} />
+          {!loading && status === 'resolved' && images.length < totalHits && (
+            <LoadMoreBtn loadMoreClick={loadMore} />
+          )}
+          {url && <Modal url={url} alt={alt} onClose={closeModal} />}
+        </div>
+      )}
+      {loading && <Loader />}
+    </div>
+  );
+};
