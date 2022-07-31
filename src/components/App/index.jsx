@@ -26,22 +26,21 @@ export const App = () => {
         setLoading(true);
         const { hits, totalHits } = await fetchImages(searchQuery, page);
         if (hits.length === 0) {
+          setLoading(false);
           setTotalHits(totalHits);
           notifyError('Nothing was found for your query, try something else');
-          setLoading(false);
         } else {
+          setLoading(false);
           setTotalHits(totalHits);
           setImages(prevImages => [...prevImages, ...hits]);
-          setLoading(false);
         }
       } catch (error) {
-        setTotalHits(totalHits);
-        notifyError(error);
         setLoading(false);
+        notifyError(error);
       }
     };
     fetchSearchQuery();
-  }, [page, searchQuery, totalHits]);
+  }, [page, searchQuery]);
 
   const handleFormSubmit = searchQuery => {
     setSearchQuery(searchQuery);
