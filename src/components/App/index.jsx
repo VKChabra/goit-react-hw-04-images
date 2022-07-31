@@ -26,24 +26,22 @@ export const App = () => {
         setLoading(true);
         const { hits, totalHits } = await fetchImages(searchQuery, page);
         if (hits.length === 0) {
-          setLoading(false);
-          notifyError('Nothing was found for your query, try something else');
-        } else {
-          setLoading(false);
-          setImages(prevImages => [...prevImages, ...hits]);
           setTotalHits(totalHits);
+          notifyError('Nothing was found for your query, try something else');
+          setLoading(false);
+        } else {
+          setTotalHits(totalHits);
+          setImages(prevImages => [...prevImages, ...hits]);
+          setLoading(false);
         }
       } catch (error) {
+        setTotalHits(totalHits);
         notifyError(error);
         setLoading(false);
       }
     };
     fetchSearchQuery();
-  }, [page, searchQuery]);
-
-  const idleMarkup = () => (
-    <h2 className={styles.Idle}>Please enter search query first</h2>
-  );
+  }, [page, searchQuery, totalHits]);
 
   const handleFormSubmit = searchQuery => {
     setSearchQuery(searchQuery);
@@ -72,7 +70,9 @@ export const App = () => {
   return (
     <div className={styles.App}>
       <Searchbar onSubmit={handleFormSubmit} />
-      {!searchQuery && idleMarkup()}
+      {!searchQuery && (
+        <h2 className={styles.Idle}>Please enter search query first</h2>
+      )}
       <div className={styles.Resolved}>
         <ImageGallery images={images} onImageClick={openModal} />
         {!loading && images.length < totalHits && (
