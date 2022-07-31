@@ -9,7 +9,6 @@ async function fetchImages(query, page) {
     return response.data;
   } catch (error) {
     console.log(error);
-    return error.response.data;
   }
 }
 

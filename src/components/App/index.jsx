@@ -5,48 +5,48 @@ import Loader from 'components/Loader';
 import ImageGallery from 'components/ImageGallery';
 import LoadMoreBtn from 'components/Button';
 import Modal from 'components/Modal';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import styles from './app.module.css';
 
 export const App = () => {
   const [images, setImages] = useState([]);
-  const [searchquery, setSearchquery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [error, setError] = useState(null);
-  const [status, setStatus] = useState('idle');
   const [loading, setLoading] = useState(false);
-  const [url, setUrl] = useState(null);
-  const [alt, setAlt] = useState(null);
+  const [modal, setModal] = useState({ alt: '', url: '' });
   const [totalHits, setTotalHits] = useState(0);
 
   useEffect(() => {
-    if (searchquery === '') {
+    if (!searchQuery) {
       return;
     }
     const fetchSearchQuery = async () => {
       try {
         setLoading(true);
-        const { hits, totalHits } = await fetchImages(searchquery, page);
+        const { hits, totalHits } = await fetchImages(searchQuery, page);
         if (hits.length === 0) {
           setLoading(false);
-          setError('Nothing was found for your query, try something else');
-          setStatus('rejected');
+          notifyError('Nothing was found for your query, try something else');
         } else {
           setLoading(false);
           setImages(prevImages => [...prevImages, ...hits]);
           setTotalHits(totalHits);
-          setStatus('resolved');
         }
       } catch (error) {
+        notifyError(error);
         setLoading(false);
-        setError(await fetchImages(searchquery, page));
-        setStatus('rejected');
       }
     };
     fetchSearchQuery();
-  }, [page, searchquery]);
+  }, [page, searchQuery]);
+
+  const idleMarkup = () => (
+    <h2 className={styles.Idle}>Please enter search query first</h2>
+  );
 
   const handleFormSubmit = searchQuery => {
-    setSearchquery(searchQuery);
+    setSearchQuery(searchQuery);
     setPage(1);
     setImages([]);
   };
@@ -56,34 +56,32 @@ export const App = () => {
   };
 
   const openModal = (url, alt) => {
-    setUrl(url);
-    setAlt(alt);
+    setModal({ url, alt });
   };
 
   const closeModal = () => {
-    setUrl(null);
-    setAlt(null);
+    setModal({ url: '', alt: '' });
   };
 
+  const notifyError = message =>
+    toast.error(message, {
+      autoClose: 2500,
+    });
+
+  const { url, alt } = modal;
   return (
     <div className={styles.App}>
       <Searchbar onSubmit={handleFormSubmit} />
-      {status === 'idle' && (
-        <h2 className={styles.Idle}>Please enter search query</h2>
-      )}
-      {status === 'rejected' && !loading && (
-        <h1 className={styles.Error}>{error}</h1>
-      )}
-      {status === 'resolved' && (
-        <div className={styles.Resolved}>
-          <ImageGallery images={images} onImageClick={openModal} />
-          {!loading && images.length < totalHits && (
-            <LoadMoreBtn loadMoreClick={loadMore} />
-          )}
-          {url && <Modal url={url} alt={alt} onClose={closeModal} />}
-        </div>
-      )}
+      {!searchQuery && idleMarkup()}
+      <div className={styles.Resolved}>
+        <ImageGallery images={images} onImageClick={openModal} />
+        {!loading && images.length < totalHits && (
+          <LoadMoreBtn loadMoreClick={loadMore} />
+        )}
+        {url && <Modal url={url} alt={alt} onClose={closeModal} />}
+      </div>
       {loading && <Loader />}
+      <ToastContainer />
     </div>
   );
 };
