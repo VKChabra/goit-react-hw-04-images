@@ -6,8 +6,7 @@
 }
 
 .Idle,
-.Resolved,
-.Error {
+.Resolved {
   display: inherit;
   justify-items: center;
 }
